@@ -48,9 +48,11 @@ class Services:
     def stop(self):
         for service in self.services:
             service.stop()
-    def add_matrix(self, username, password, server):
-        import service_matrix
-        self.add(service_matrix.Matrix(self, username, password, server))
+    def add_matrix(self, username, password, homeserver):
+        #from service_matrix import Matrix
+        service = Matrix(self, username, password, homeserver)
+        self.add(service)
+        return service
 
     def on_member(self, event):
         self.on_message(event)
@@ -99,7 +101,7 @@ class TempMessage:
         self.room.service.delete(self.room, self.msg)
         self.msg = None
 
-class MatrixRoom(services.Room):
+class MatrixRoom(Room):
     def __init__(self, service, room):
         super().__init__(service, service._room2name(room), not room.guest_access, raw=room)
     @property
@@ -136,6 +138,22 @@ class Matrix(MatrixBotAPI):
         result = room.raw.send_text(message)
         return result['event_id']
 
+    def join(self, room_id):
+        room = self.client.join_room(room_id)
+        # Add message callback for this room
+        room.add_listener(self.handle_message)
+        # Add room
+        matrix_room = MatrixRoom(self, room)
+        # add rooms to a dict rather than a list.
+        # i don't recall the original design plan well to know if this is the right solution.
+        self.rooms[room_id] = matrix_room
+        return matrix_room
+
+    def part(self, room):
+        room_id = room.raw.room_id
+        self.client.api.leave_room(room_id)
+        del room_id
+
     def typing(self, room, flag = True, timeout = None):
         self._send_typing(room.raw.room_id, flag, timeout)
 
@@ -164,7 +182,7 @@ class Matrix(MatrixBotAPI):
         event_id = event_raw['event_id']
         sender = event_raw['sender']
         room_name = self._room2name(room_raw)
-        services.logger.debug(f'{room_name} {repr(event_raw)}')
+        logger.debug(f'{room_name} {repr(event_raw)}')
         if room_name in self.rooms:
             room = self.rooms[room_name]
             room.raw = room_raw
@@ -198,23 +216,18 @@ class Matrix(MatrixBotAPI):
             etype = 'other'
         if type(data) is str:
             data = emoji.demojize(data)
-        return services.Event(self, room, event_id, sender, etype, data=data, raw=event_raw, reply=reply_id)
+        return Event(self, room, event_id, sender, etype, data=data, raw=event_raw, reply=reply_id)
 
     def handle_message(self, room_raw, event_raw):
         event = self._matrix2event(room_raw, event_raw)
         self.handler._on_event(event)
 
     def handle_invite(self, room_id, state):
-        # this overrides the base class invite handler to add rooms to a dict rather than a list.
-        # i don't recall the original design plan well to know if this is the right solution.
+        # this overrides the base class invite handler to use the new join member function
         print("Got invite to room: " + str(room_id))
         if self.room_ids is None or room_id in self.room_ids:
             print("Joining...")
-            room = self.client.join_room(room_id)
-            # Add message callback for this room
-            room.add_listener(self.handle_message)
-            # Add room
-            self.rooms[room_id] = MatrixRoom(self, room)
+            self.join(room_id)
         else:
             print("Room not in allowed rooms list")
     
@@ -259,3 +272,18 @@ class Matrix(MatrixBotAPI):
             content['timeout'] = timeout
          path = "/rooms/{}/typing/{}".format(quote(room_id), quote(self.user_id))
          return self.client.api._send("PUT", path, content)
+
+if __name__ == '__main__':
+    import time
+    class Bot(Services):
+        pass
+    bot = Bot()
+    print(f'Logging in ...')
+    matrix_service = bot.add_matrix(username='test_matrix_bot', password='test_matrix_bot', homeserver='https://matrix.org')
+    room_name = '#test-bot:matrix.org'
+    print(f'Joining {room_name} ...')
+    test_room = matrix_service.join(room_name)
+    print(f'Waiting a bit ...')
+    time.sleep(10)
+    print(f'Parting {room_name} ...')
+    matrix_service.part(test_room)
