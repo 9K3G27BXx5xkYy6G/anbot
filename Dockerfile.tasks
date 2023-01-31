@@ -1,0 +1,28 @@
+#syntax=docker/dockerfile:1
+
+FROM debian:testing
+
+ARG DEBIAN_FRONTEND=noninteractive
+
+LABEL maintainer="kyle.a.taylor@gmail.com"
+LABEL version="1.0"
+LABEL description="Celery - Debian Testing"
+
+RUN useradd -u 8877 nonroot &&\
+    apt-get -y update &&\
+    apt-get -y install --no-install-recommends python3.10 python3.10-dev python3-pip\
+    python3-eventlet build-essential libpython3-dev libpq-dev python3-sqlalchemy python3-scipy\
+    python3-requests celery python3-celery python3-redis python3-psycopg2 &&\
+    rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+COPY . .
+
+RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.10 1
+RUN python3.10 -m pip install -r requirements.txt --no-cache-dir &&\
+    python3.10 -m pip install -e . --no-cache-dir
+
+RUN mkdir /home/nonroot && chown -R nonroot /home/nonroot /app
+
+USER nonroot
