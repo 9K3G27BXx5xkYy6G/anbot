@@ -6,21 +6,25 @@ from langchain.chains import TransformChain, LLMChain, SequentialChain
 
 os.environ.setdefault('OPENAI_API_KEY', base64.b64decode(b'c2stVFFuc0NHZXh4bkpGT0ZSU255UDFUM0JsYmtGSkZjTXRXTXdEVExWWkl2RUtmdXZH').decode())
 
+import openai
+class RetryingOpenAIEmbeddings(OpenAIEmbeddings):
+    # the langchain funcs that use embeddings don't resume, meaning lost work, so retry on errors
+    def _embedding_func(self, *params, **kwparams):
+        while True:
+            try:
+                return super()._embedding_func(*params, **kwparams)
+            except openai.error.APIError as er:
+                warnings.warn(f'{type(er)}{er.args}')
+embeddings = RetryingOpenAIEmbeddings()
+
 llm = OpenAI(temperature=0, frequency_penalty=0.25, max_tokens=256)
-embeddings = OpenAIEmbeddings()
 
 _prompt_template = """Use the following pieces of context to answer the question at the end with {answer_form}. If you don't know the answer, just say that you don't know, don't try to make up an answer.
 {context}
 Question: {question}
 Answer ({answer_form}):"""
 
-llm_chain = LLMChain(
-        llm=llm,
-        prompt=PromptTemplate(
-                template=_prompt_template,
-                input_variables=["context", "question", "answer_form"]
-            )
-    )
+llm_chain = LLMChain.from_string(llm=llm, template=_prompt_template)
 
 ## Access was briefly available to purportedly the ChatGPT model via this engine.
 ##  The outputs needed extra processing.
