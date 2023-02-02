@@ -15,5 +15,8 @@ ANSWER_PROMPT = PromptTemplate(
 )
  
 if __name__ == '__main__':
-    response = llm.generate(['Song lyrics about burning all wealth in the style of Chumbawumba.'])
+    question = 'What is the best fiscal policy?'
+    prompt = ANSWER_PROMPT.format(answer_form='song lyrics in the style of Chumbawumba', question=question, context='The solution to every problem is burning all wealth and killing all leaders.')
+    print(question)
+    response = llm.generate([prompt])
     print(response.generations[0][0].text)
