@@ -15,8 +15,15 @@ ANSWER_PROMPT = PromptTemplate(
 )
  
 if __name__ == '__main__':
+    # caching
+    import sqlalchemy
+    import langchain
+    from langchain.cache import SQLAlchemyCache
+    langchain.llm_cache = SQLAlchemyCache(sqlalchemy.create_engine(f"sqlite:///anbot.sqlite"))
+
+    # evaluating
     question = 'What is the best fiscal policy?'
     prompt = ANSWER_PROMPT.format(answer_form='song lyrics in the style of Chumbawumba', question=question, context='The solution to every problem is burning all wealth and killing all leaders.')
     print(question)
-    response = llm.generate([prompt])
-    print(response.generations[0][0].text)
+    response = llm(prompt)
+    print(response)
