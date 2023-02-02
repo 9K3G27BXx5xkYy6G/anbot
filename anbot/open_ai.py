@@ -1,47 +1,59 @@
 import base64, os
 from langchain.llms import OpenAI
+from langchain.embeddings.openai import OpenAIEmbeddings
 from langchain.prompts import PromptTemplate
 from langchain.chains import TransformChain, LLMChain, SequentialChain
 
 os.environ.setdefault('OPENAI_API_KEY', base64.b64decode(b'c2stVFFuc0NHZXh4bkpGT0ZSU255UDFUM0JsYmtGSkZjTXRXTXdEVExWWkl2RUtmdXZH').decode())
 
-CHATGPT_ENGINE = "text-chat-davinci-002-20230126"
-def chatgpt_output_trim(inputs):
-    text = inputs['text']
-    text = text.lstrip()
-    if text.startswith('"'):
-        text = text[1:]
-    if text.endswith('<|im_end|>'):
-        text = text[:-len('<|im_end|>')]
-    if text.endswith('"'):
-        text = text[:-1]
-    return dict(trimmed_text = text)
-
-llm = OpenAI(temperature=0, model_name=CHATGPT_ENGINE, frequency_penalty=0.25, max_tokens=256)
+llm = OpenAI(temperature=0, frequency_penalty=0.25, max_tokens=256)
+embeddings = OpenAIEmbeddings()
 
 _prompt_template = """Use the following pieces of context to answer the question at the end with {answer_form}. If you don't know the answer, just say that you don't know, don't try to make up an answer.
 {context}
 Question: {question}
 Answer ({answer_form}):"""
 
-llm_chain = SequentialChain(
-        input_variables=["context", "question", "answer_form"],
-        chains=[
-            LLMChain(
-                    llm=llm,
-                    prompt=PromptTemplate(
-                            template=_prompt_template,
-                            input_variables=["context", "question", "answer_form"]
-                        )
-                ),
-            TransformChain(
-                    input_variables=["text"],
-                    output_variables=["trimmed_text"],
-                    transform=chatgpt_output_trim
-                ),
-        ],
-        output_variables=['trimmed_text']
+llm_chain = LLMChain(
+        llm=llm,
+        prompt=PromptTemplate(
+                template=_prompt_template,
+                input_variables=["context", "question", "answer_form"]
+            )
     )
+
+## Access was briefly available to purportedly the ChatGPT model via this engine.
+##  The outputs needed extra processing.
+#CHATGPT_ENGINE = "text-chat-davinci-002-20230126"
+#def chatgpt_output_trim(inputs):
+#    text = inputs['text']
+#    text = text.lstrip()
+#    if text.startswith('"'):
+#        text = text[1:]
+#    if text.endswith('<|im_end|>'):
+#        text = text[:-len('<|im_end|>')]
+#    if text.endswith('"'):
+#        text = text[:-1]
+#    return dict(trimmed_text = text)
+
+#llm_chain = SequentialChain(
+#        input_variables=["context", "question", "answer_form"],
+#        chains=[
+#            LLMChain(
+#                    llm=llm,
+#                    prompt=PromptTemplate(
+#                            template=_prompt_template,
+#                            input_variables=["context", "question", "answer_form"]
+#                        )
+#                ),
+#            TransformChain(
+#                    input_variables=["text"],
+#                    output_variables=["trimmed_text"],
+#                    transform=chatgpt_output_trim
+#                ),
+#        ],
+#        output_variables=['trimmed_text']
+#    )
  
 if __name__ == '__main__':
     # caching
