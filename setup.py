@@ -11,4 +11,5 @@ setup(
     maintainer_email="",
     url="https://github.com/9K3G27BXx5xkYy6G/anbot",
     packages=["anbot"],
+    install_requires=["matrix_bot_api", "langchain", "openai"],
 )
