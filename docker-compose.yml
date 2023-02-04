@@ -1,0 +1,54 @@
+version: "3"
+services:
+  anbot_tasks:
+    container_name: anbot-tasks
+    image: anbot-tasks:latest
+    build:
+      context: .
+      dockerfile: Dockerfile.tasks
+    command: [celery, -A, main, worker, -Q, api_queue, --loglevel=INFO, --pool=eventlet, --concurrency=300]
+    env_file:
+      - .anbot-tasks-env
+    volumes:
+      - ./data/:/data
+    depends_on:
+      - rabbitmq
+  anbot:
+    container_name: anbot-matrix-chat
+    image: anbot-matrix-chat:latest
+    build:
+      context: .
+      dockerfile: Dockerfile.matrix
+    env_file:
+      - .anbot-matrix-chat-env
+    volumes:
+    - ./data/:/data
+    depends_on:
+      - anbot_tasks
+
+  redis:
+    container_name: redis
+    image: redis:latest
+    sysctls:
+      - net.core.somaxconn=4096
+    expose:
+      - 6379
+    ports:
+      - 6379:6379
+
+  rabbitmq:
+    image: rabbitmq:latest
+    container_name: rabbitmq
+    ports:
+      - 5672:5672
+    depends_on:
+      - redis
+
+  postgres:
+    image: postgres:latest
+    container_name: postgres
+    ports:
+      - 5432:5432
+    env_file:
+      - .anbot-tasks-env
+
