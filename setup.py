@@ -10,7 +10,7 @@ setup(
     maintainer="xloem",
     maintainer_email="",
     url="https://github.com/9K3G27BXx5xkYy6G/anbot",
-    scripts=["scripts/anbot.py"],
+    scripts=["scripts/bot.py"],
     packages=["anbot"],
     install_requires=["matrix_bot_api", "langchain>=0.0.76", "openai"],
 )

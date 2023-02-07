@@ -1,4 +1,5 @@
 import requests
+from typing import List, Dict, Any
 
 try:
     from bs4 import BeautifulSoup

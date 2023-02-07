@@ -1,0 +1,2 @@
+matrix-nio[e2e]==0.20.1
+emoji==2.2.0

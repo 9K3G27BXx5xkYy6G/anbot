@@ -1,10 +1,13 @@
 import hashlib
 from typing import Dict, List, Any
+from anbot.reddit import Reddit as RedditBackend
 
 sha1 = lambda x: hashlib.sha1(str(x).encode("utf-8")).hexdigest()
 
 
-def cache_reddit_top_post(hash: bool = True, timeframe: str = "weekly") -> Dict[str]:
+def cache_reddit_top_post(
+    hash: bool = True, timeframe: str = "weekly"
+) -> Dict[str, str]:
     top_post = {}
     try:
         top_post = RedditBackend(timeframe=timeframe)
