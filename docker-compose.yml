@@ -19,6 +19,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.matrix
+    command: ["bot.py"]
     env_file:
       - .anbot-matrix-chat-env
     volumes:

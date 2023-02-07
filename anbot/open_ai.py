@@ -4,9 +4,16 @@ from langchain.embeddings.openai import OpenAIEmbeddings
 from langchain.prompts import PromptTemplate
 from langchain.chains import TransformChain, LLMChain, SequentialChain
 
-os.environ.setdefault('OPENAI_API_KEY', base64.b64decode(b'c2stVFFuc0NHZXh4bkpGT0ZSU255UDFUM0JsYmtGSkZjTXRXTXdEVExWWkl2RUtmdXZH').decode())
+os.environ.setdefault(
+    "OPENAI_API_KEY",
+    base64.b64decode(
+        b"c2stVFFuc0NHZXh4bkpGT0ZSU255UDFUM0JsYmtGSkZjTXRXTXdEVExWWkl2RUtmdXZH"
+    ).decode(),
+)
 
 import openai
+
+
 class RetryingOpenAIEmbeddings(OpenAIEmbeddings):
     # the langchain funcs that use embeddings don't resume, meaning lost work, so retry on errors
     def _embedding_func(self, *params, **kwparams):
@@ -14,7 +21,9 @@ class RetryingOpenAIEmbeddings(OpenAIEmbeddings):
             try:
                 return super()._embedding_func(*params, **kwparams)
             except openai.error.APIError as er:
-                warnings.warn(f'{type(er)}{er.args}')
+                warnings.warn(f"{type(er)}{er.args}")
+
+
 embeddings = RetryingOpenAIEmbeddings()
 
 llm = OpenAI(temperature=0, frequency_penalty=0.25, max_tokens=256)
@@ -28,8 +37,8 @@ llm_chain = LLMChain.from_string(llm=llm, template=_prompt_template)
 
 ## Access was briefly available to purportedly the ChatGPT model via this engine.
 ##  The outputs needed extra processing.
-#CHATGPT_ENGINE = "text-chat-davinci-002-20230126"
-#def chatgpt_output_trim(inputs):
+# CHATGPT_ENGINE = "text-chat-davinci-002-20230126"
+# def chatgpt_output_trim(inputs):
 #    text = inputs['text']
 #    text = text.lstrip()
 #    if text.startswith('"'):
@@ -40,7 +49,7 @@ llm_chain = LLMChain.from_string(llm=llm, template=_prompt_template)
 #        text = text[:-1]
 #    return dict(trimmed_text = text)
 
-#llm_chain = SequentialChain(
+# llm_chain = SequentialChain(
 #        input_variables=["context", "question", "answer_form"],
 #        chains=[
 #            LLMChain(
@@ -58,20 +67,23 @@ llm_chain = LLMChain.from_string(llm=llm, template=_prompt_template)
 #        ],
 #        output_variables=['trimmed_text']
 #    )
- 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     # caching
     import sqlalchemy
     import langchain
     from langchain.cache import SQLAlchemyCache
-    langchain.llm_cache = SQLAlchemyCache(sqlalchemy.create_engine(f"sqlite:///anbot.sqlite"))
+
+    langchain.llm_cache = SQLAlchemyCache(
+        sqlalchemy.create_engine(f"sqlite:///anbot.sqlite")
+    )
 
     # evaluating
-    question = 'What is the best fiscal policy?'
+    question = "What is the best fiscal policy?"
     print(question)
     response = llm_chain.run(
-            answer_form='song lyrics in the style of Chumbawumba',
-            question=question,
-            context='The solution to every problem is burning all wealth and killing all leaders.'
-        )
+        answer_form="song lyrics in the style of Chumbawumba",
+        question=question,
+        context="The solution to every problem is burning all wealth and killing all leaders.",
+    )
     print(response)
